@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+
+selected=$(
+    niri msg --json outputs |
+        jq -r '
+            to_entries[] |
+            "\(.key)  [\(if .value.current_mode == null then "OFF" else "ON" end)]"
+        ' |
+        fuzzel --dmenu --prompt="Displays: "
+)
+
+[[ -z "$selected" ]] && exit 0
+
+output="${selected%%  *}"
+
+if niri msg --json outputs |
+    jq -e --arg output "$output" '.[$output].current_mode == null' >/dev/null; then
+    niri msg output "$output" on
+else
+    niri msg output "$output" off
+fi
