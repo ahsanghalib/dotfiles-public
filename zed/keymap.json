@@ -1,0 +1,157 @@
+[
+  {
+    "context": "vim_mode == insert",
+    "bindings": {
+      "j k": "vim::NormalBefore",
+      "alt-e": "editor::AcceptEditPrediction",
+      "alt-k": "editor::AcceptNextWordEditPrediction",
+      "alt-l": "editor::AcceptNextLineEditPrediction",
+      "alt-n": "editor::NextEditPrediction",
+      "alt-p": "editor::PreviousEditPrediction",
+      "alt-x": "editor::ToggleEditPrediction"
+    }
+  },
+  {
+    "context": "VimControl && !menu",
+    "bindings": {
+      "ctrl-h": "workspace::ActivatePaneLeft",
+      "ctrl-j": "workspace::ActivatePaneDown",
+      "ctrl-k": "workspace::ActivatePaneUp",
+      "ctrl-l": "workspace::ActivatePaneRight"
+    }
+  },
+  {
+    "context": "Dock",
+    "bindings": {
+      "ctrl-h": "workspace::ActivatePaneLeft",
+      "ctrl-j": "workspace::ActivatePaneDown",
+      "ctrl-k": "workspace::ActivatePaneUp",
+      "ctrl-l": "workspace::ActivatePaneRight"
+    }
+  },
+  {
+    "context": "Terminal",
+    "bindings": {
+      "ctrl-h": "workspace::ActivatePaneLeft",
+      "ctrl-j": "workspace::ActivatePaneDown",
+      "ctrl-k": "workspace::ActivatePaneUp",
+      "ctrl-l": "workspace::ActivatePaneRight"
+    }
+  },
+  {
+    "context": "vim_mode == normal",
+    "bindings": {
+      "j": ["vim::Down", { "display_lines": true }],
+      "k": ["vim::Up", { "display_lines": true }],
+      "ctrl-d": ["workspace::SendKeystrokes", "ctrl-d z z"],
+      "ctrl-u": ["workspace::SendKeystrokes", "ctrl-u z z"],
+      "g ,": "vim::ChangeListNewer",
+      "g ;": "vim::ChangeListOlder",
+      "shift-k": "editor::Hover",
+      "tab": "pane::ActivateNextItem",
+      "shift-tab": "pane::ActivatePreviousItem",
+      "space +": "vim::Increment",
+      "space -": "vim::Decrement",
+      "space e": "editor::Hover",
+      "space q": "diagnostics::Deploy",
+      "space j": "editor::GoToPreviousDiagnostic",
+      "space k": "editor::GoToDiagnostic",
+      "space w v": "pane::SplitRight",
+      "space w h": "pane::SplitDown",
+      "space w x": ["pane::CloseActiveItem", { "close_pinned": false }],
+      "space t o": "workspace::NewFile",
+      "space t x": ["pane::CloseActiveItem", { "close_pinned": false }],
+      "space t n": "pane::ActivateNextItem",
+      "space t p": "pane::ActivatePreviousItem",
+      "space b x": ["pane::CloseActiveItem", { "close_pinned": false }],
+      "space space": "file_finder::Toggle",
+      "space /": "buffer_search::Deploy",
+      "space f f": "file_finder::Toggle",
+      "space f g": "project_search::ToggleFocus",
+      "space f w": "project_search::ToggleFocus",
+      "space f b": "tab_switcher::Toggle",
+      "space f d": "diagnostics::Deploy",
+      "space f r": "workspace::ReopenLastPicker",
+      "space f k": "zed::OpenKeymap",
+      "space e e": "project_panel::ToggleFocus",
+      "space e f": "project_panel::ToggleFocus",
+      "space t t": "terminal_panel::Toggle",
+      "space c f": "editor::Format",
+      "space m p": "editor::Format",
+      "space u f": "editor::Format",
+      "space shift-d": "editor::GoToTypeDefinition",
+      "space d s": "outline::Toggle",
+      "space w s": "project_symbols::Toggle",
+      "space r n": "editor::Rename",
+      "space c a": "editor::ToggleCodeActions",
+      "g shift-k": "editor::ShowSignatureHelp",
+      "space g s": "git_panel::ToggleFocus",
+      "space g g": "git_panel::ToggleFocus",
+      "space h s": "git::StageAndNext",
+      "space h r": "git::Restore",
+      "space h shift-p": "editor::ToggleSelectedDiffHunks",
+      "space h b": "git::Blame",
+      "space h d": "git::ReviewDiff",
+      "space a a": "agent::ToggleFocus",
+      "space a n": "agent::NewThread",
+      "space a s": "agent::ToggleProfileSelector",
+      "space a m": "agent::ToggleModelSelector",
+      "space a t": "agents_sidebar::ToggleThreadSwitcher"
+    }
+  },
+  {
+    "context": "vim_mode == visual",
+    "bindings": {
+      "space d": "editor::Delete",
+      "space p": ["vim::Paste", { "preserve_clipboard": true }],
+      "shift-j": "editor::MoveLineDown",
+      "shift-k": "editor::MoveLineUp",
+      "space h s": "git::StageAndNext",
+      "space h r": "git::Restore",
+      "space c f": "editor::Format"
+    }
+  },
+  {
+    "context": "Workspace",
+    "bindings": {
+      "ctrl-alt-a": "agent::ToggleFocus",
+      "ctrl-alt-j": "multi_workspace::ToggleWorkspaceSidebar",
+      "ctrl-alt-;": "multi_workspace::FocusWorkspaceSidebar",
+      "ctrl-alt-n": "multi_workspace::NextThread",
+      "ctrl-alt-p": "multi_workspace::PreviousThread",
+      "ctrl-alt-shift-n": "agent::ToggleNewThreadMenu"
+    }
+  },
+  {
+    "context": "AgentPanel",
+    "bindings": {
+      "ctrl-tab": "agents_sidebar::ToggleThreadSwitcher",
+      "ctrl-shift-tab": [
+        "agents_sidebar::ToggleThreadSwitcher",
+        { "select_last": true }
+      ],
+      "ctrl-alt-shift-n": "agent::ToggleNewThreadMenu",
+      "ctrl-i": "agent::ToggleProfileSelector",
+      "ctrl-alt-/": "agent::ToggleModelSelector"
+    }
+  },
+  {
+    "context": "ThreadsSidebar",
+    "bindings": {
+      "ctrl-tab": "agents_sidebar::ToggleThreadSwitcher",
+      "ctrl-shift-tab": [
+        "agents_sidebar::ToggleThreadSwitcher",
+        { "select_last": true }
+      ]
+    }
+  },
+  {
+    "context": "vim_mode == normal || vim_mode == visual",
+    "bindings": {
+      "] h": "editor::GoToHunk",
+      "[ h": "editor::GoToPreviousHunk",
+      "] d": "editor::GoToDiagnostic",
+      "[ d": "editor::GoToPreviousDiagnostic"
+    }
+  }
+]
