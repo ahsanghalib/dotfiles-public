@@ -1,0 +1,213 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+umask 077
+
+default_encrypted_dir="${HOME}/Encrypted"
+default_decrypted_dir="${HOME}/Decrypted"
+
+usage() {
+    cat <<'USAGE'
+Usage:
+  crypt-folder -e [ENCRYPTED_DIR] [DECRYPTED_DIR]
+  crypt-folder -d [ENCRYPTED_DIR] [DECRYPTED_DIR]
+  crypt-folder -u [DECRYPTED_DIR]
+  crypt-folder init [ENCRYPTED_DIR] [DECRYPTED_DIR]
+  crypt-folder mount [ENCRYPTED_DIR] [DECRYPTED_DIR]
+  crypt-folder unmount [DECRYPTED_DIR]
+  crypt-folder help
+
+Defaults:
+  encrypted directory: ~/Encrypted
+  decrypted mountpoint: ~/Decrypted
+
+The init and mount commands install gocryptfs through the available system
+package manager when it is not already installed. Passwords are entered by
+gocryptfs and are never stored by this script. `-e` initializes the encrypted
+directory; `-d` mounts its decrypted view; `-u` unmounts that view.
+USAGE
+}
+
+die() {
+    printf 'Error: %s\n' "$*" >&2
+    exit 1
+}
+
+require_command() {
+    command -v "$1" >/dev/null 2>&1 || die "required command not found: $1"
+}
+
+path_exists() {
+    [[ -e "$1" || -L "$1" ]]
+}
+
+directory_is_empty() {
+    [[ -d "$1" ]] || return 1
+    [[ -z "$(find "$1" -mindepth 1 -maxdepth 1 -print -quit)" ]]
+}
+
+validate_directory_target() {
+    local directory="$1"
+
+    [[ ! -L "$directory" ]] || die "refusing symlink directory: $directory"
+    if path_exists "$directory" && [[ ! -d "$directory" ]]; then
+        die "path is not a directory: $directory"
+    fi
+}
+
+validate_empty_directory_target() {
+    local directory="$1"
+
+    validate_directory_target "$directory"
+    if [[ -d "$directory" ]] && ! directory_is_empty "$directory"; then
+        die "directory must be empty: $directory"
+    fi
+}
+
+ensure_directory() {
+    local directory="$1"
+
+    mkdir -p -- "$directory"
+    [[ -d "$directory" ]] || die "could not create directory: $directory"
+}
+
+run_as_root() {
+    if (( EUID == 0 )); then
+        "$@"
+    elif command -v sudo >/dev/null 2>&1; then
+        sudo "$@"
+    else
+        die "sudo is required to install gocryptfs as a non-root user"
+    fi
+}
+
+install_gocryptfs() {
+    local operating_system
+
+    operating_system="$(uname -s)"
+    printf 'gocryptfs is not installed; attempting package installation...\n' >&2
+
+    case "$operating_system" in
+    Darwin)
+        require_command brew
+        brew install gocryptfs
+        ;;
+    Linux)
+        if command -v apt-get >/dev/null 2>&1; then
+            run_as_root apt-get install -y gocryptfs
+        elif command -v pacman >/dev/null 2>&1; then
+            run_as_root pacman -S --needed --noconfirm gocryptfs
+        elif command -v dnf >/dev/null 2>&1; then
+            run_as_root dnf install -y gocryptfs
+        elif command -v zypper >/dev/null 2>&1; then
+            run_as_root zypper --non-interactive install gocryptfs
+        else
+            die "no supported package manager found; install gocryptfs manually"
+        fi
+        ;;
+    *)
+        die "unsupported operating system: $operating_system"
+        ;;
+    esac
+
+    command -v gocryptfs >/dev/null 2>&1 || die "gocryptfs installation did not provide gocryptfs"
+}
+
+ensure_gocryptfs() {
+    if ! command -v gocryptfs >/dev/null 2>&1; then
+        install_gocryptfs
+    fi
+}
+
+init_folder() {
+    local encrypted_dir="$1"
+    local decrypted_dir="$2"
+
+    [[ "$encrypted_dir" != "$decrypted_dir" ]] || die "encrypted and decrypted directories must differ"
+    validate_empty_directory_target "$encrypted_dir"
+    validate_empty_directory_target "$decrypted_dir"
+    ensure_gocryptfs
+    ensure_directory "$encrypted_dir"
+    ensure_directory "$decrypted_dir"
+
+    gocryptfs -init "$encrypted_dir"
+    printf 'Initialized encrypted folder: %s\nMount it with: crypt-folder mount %q %q\n' \
+        "$encrypted_dir" "$encrypted_dir" "$decrypted_dir"
+}
+
+mount_folder() {
+    local encrypted_dir="$1"
+    local decrypted_dir="$2"
+
+    validate_directory_target "$encrypted_dir"
+    [[ -f "$encrypted_dir/gocryptfs.conf" ]] || die "not an initialized gocryptfs directory: $encrypted_dir"
+    validate_empty_directory_target "$decrypted_dir"
+    ensure_gocryptfs
+    ensure_directory "$decrypted_dir"
+
+    gocryptfs "$encrypted_dir" "$decrypted_dir"
+    printf 'Mounted %s at %s\n' "$encrypted_dir" "$decrypted_dir"
+}
+
+unmount_folder() {
+    local decrypted_dir="$1"
+
+    validate_directory_target "$decrypted_dir"
+    [[ -d "$decrypted_dir" ]] || die "mountpoint does not exist: $decrypted_dir"
+
+    if command -v fusermount3 >/dev/null 2>&1; then
+        fusermount3 -u -- "$decrypted_dir"
+    elif command -v fusermount >/dev/null 2>&1; then
+        fusermount -u -- "$decrypted_dir"
+    elif command -v umount >/dev/null 2>&1; then
+        umount -- "$decrypted_dir"
+    else
+        die "no supported unmount command found (fusermount3, fusermount, or umount)"
+    fi
+
+    printf 'Unmounted %s\n' "$decrypted_dir"
+}
+
+if (($# < 1)); then
+    usage >&2
+    exit 2
+fi
+
+case "$1" in
+-e | init | -d | mount)
+    (( $# <= 3 )) || {
+        usage >&2
+        exit 2
+    }
+    case "$1" in
+    -e | init)
+        operation=init
+        ;;
+    -d | mount)
+        operation=mount
+        ;;
+    esac
+    encrypted_directory="${2:-$default_encrypted_dir}"
+    decrypted_directory="${3:-$default_decrypted_dir}"
+    if [[ "$operation" == init ]]; then
+        init_folder "$encrypted_directory" "$decrypted_directory"
+    else
+        mount_folder "$encrypted_directory" "$decrypted_directory"
+    fi
+    ;;
+unmount | -u)
+    (( $# <= 2 )) || {
+        usage >&2
+        exit 2
+    }
+    unmount_folder "${2:-$default_decrypted_dir}"
+    ;;
+help | -h | --help)
+    usage
+    ;;
+*)
+    printf 'Error: unknown command: %s\n' "$1" >&2
+    usage >&2
+    exit 2
+    ;;
+esac

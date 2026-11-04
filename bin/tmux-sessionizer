@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+declare -a roots=()
+
+if [[ -n "${CODE_ROOTS:-}" ]]; then
+  IFS=: read -r -a roots <<<"$CODE_ROOTS"
+else
+  roots=("$HOME/d/repos" "$HOME/d/coding" "$HOME/d/projects")
+fi
+
+declare -a candidates=()
+for root in "${roots[@]}"; do
+  [[ -d "$root" ]] || continue
+  while IFS= read -r git_entry; do
+    candidates+=("$(dirname "$git_entry")")
+  done < <(
+    find "$root" -mindepth 2 -maxdepth 4 \
+      \( -type d -o -type f \) -name .git -print 2>/dev/null
+  )
+done
+
+if git rev-parse --show-toplevel >/dev/null 2>&1; then
+  candidates+=("$(git rev-parse --show-toplevel)")
+fi
+
+if ((${#candidates[@]} == 0)); then
+  printf 'No Git repositories found. Set CODE_ROOTS as colon-separated paths.\n' >&2
+  exit 1
+fi
+
+selected="$(
+  printf '%s\n' "${candidates[@]}" |
+    sort -u |
+    fzf --height=70% --layout=reverse --border --prompt='repository> '
+)"
+
+[[ -n "$selected" ]] || exit 0
+exec "$HOME/.local/bin/dev-session" "$selected"
+
