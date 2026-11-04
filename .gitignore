@@ -1,0 +1,31 @@
+# Local credentials and environment files
+/.aws/
+/.codex/
+**/.env
+**/.env.*
+!**/.env.example
+**/credentials
+**/credentials.*
+**/*.pem
+**/*.key
+**/*.p12
+**/*.pfx
+
+# Local editor state, logs, and backups
+**/*.log
+**/*.log.*
+**/*.swp
+**/*.swo
+**/*~
+**/*.bak
+**/*.bk
+/SESSION_STATE.md
+
+# Third-party copies kept locally; do not publish without a separate license review
+/fonts/
+/tmux/plugins/
+/niri/niri-btw/
+
+# Operating system metadata
+.DS_Store
+Thumbs.db
